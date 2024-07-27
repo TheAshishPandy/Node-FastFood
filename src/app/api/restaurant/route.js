@@ -27,20 +27,40 @@ export async function POST(request) {
 
     try {
         const data = await request.json();
-        const { email, password, confirmPassword, name, city, address, contact, state } = data;
-        if (password !== confirmPassword) {
-            console.log(password)
-            console.log(confirmPassword)
-            return NextResponse.json({ error: "Password and Confirm Password does not match" }, { status:401})
+        console.log(data)
+        if (data.login) {
+            // Handle login
+            const user = await RestaurantModel.findOne({ email: data.email, password: data.password });
+            if (user) {
+                return NextResponse.json(
+                    { message: "Record Found Successfully", success: true, data: user },
+                    { status: 200 }
+                );
+            } else {
+                return NextResponse.json(
+                    { error: "Invalid email or password", success: false },
+                    { status: 401 }
+                );
+            }
         }
-        const newRestaurant = new RestaurantModel({
-            name,address,city,state,email,contact,password,
-        });
-        await newRestaurant.save();
+            else {
+                const { email, password, confirmPassword, name, city, address, contact, state } = data;
+                if (!email || !password || !confirmPassword || !name || !city || !address || !contact || !state) {
+                    return NextResponse.json({ error: "Please fill in all fields" }, { status: 400 });
+                }
 
-        return NextResponse.json({ message: "Restaurant registered successfully" }, { status: 201 });
-    } catch (error) {
-        console.error("Error during sign up:", error);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+                if (password !== confirmPassword) {
+                    return NextResponse.json({ error: "Password and Confirm Password do not match" }, { status: 400 });
+                }
+                const newRestaurant = new RestaurantModel({
+                    name, address, city, state, email, contact, password,
+                });
+                const savedRestaurant = await newRestaurant.save();
+
+                return NextResponse.json({ message: "Restaurant registered successfully", success: true, data: savedRestaurant }, { status: 201 });
+            }
+        } catch (error) {
+            console.error("Error during sign up:", error);
+            return NextResponse.json({ error: "Internal Server Error" }, { status: 500 },);
+        }
     }
-}
